@@ -35,6 +35,12 @@ const disabledDate: RangePickerProps['disabledDate'] = current => {
   return current && current < moment().endOf('day');
 };
 
+// eslint-disable-next-line arrow-body-style
+const disabledDateToday: RangePickerProps['disabledDate'] = current => {
+  // Can not select today
+  return current && current.isSame(new Date(), 'day');
+};
+
 const disabledDateTime = () => ({
   disabledHours: () => range(0, 24).splice(4, 20),
   disabledMinutes: () => range(30, 60),
@@ -66,6 +72,7 @@ const App: React.FC = () => (
     />
     <DatePicker picker="month" disabledDate={disabledDate} />
     <RangePicker disabledDate={disabledDate} />
+    <RangePicker disabledDate={disabledDateToday} allowDisabledDateInSelection={false} />
     <RangePicker
       disabledDate={disabledDate}
       disabledTime={disabledRangeTime}

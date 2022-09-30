@@ -7,6 +7,7 @@ import { RangePicker as RCRangePicker } from 'rc-picker';
 import type { GenerateConfig } from 'rc-picker/lib/generate/index';
 import * as React from 'react';
 import { forwardRef, useContext, useImperativeHandle } from 'react';
+import type { Moment } from 'moment';
 import type { PickerLocale, RangePickerProps } from '.';
 import { Components, getTimeProps } from '.';
 import { ConfigContext } from '../../config-provider';
@@ -34,6 +35,7 @@ export default function generateRangePicker<DateType>(
        */
       dropdownClassName: string;
       popupClassName?: string;
+      allowDisabledDateInSelection: boolean;
     }
   >((props, ref) => {
     const {
@@ -94,6 +96,45 @@ export default function generateRangePicker<DateType>(
       blur: () => innerRef.current?.blur(),
     }));
 
+    const [disabledDate, setDisabledDate] = React.useState<Function | null>(null);
+    const onChange = React.useCallback(
+      (dates: Moment[] | null) => {
+        if (props.allowDisabledDateInSelection !== false) {
+          return;
+        }
+
+        const start = dates?.[0];
+        const end = dates?.[1];
+
+        if (start && !end) {
+          let dd: Moment | null = null;
+          const handler = (current: Moment) => {
+            if (current < start) {
+              return true;
+            }
+
+            if (dd && current >= dd) {
+              return true;
+            }
+
+            const d = props.disabledDate?.(current as any);
+            if (d) {
+              if (!dd || current < dd) {
+                dd = current;
+              }
+            }
+
+            return d;
+          };
+
+          setDisabledDate(() => handler);
+        } else {
+          setDisabledDate(null);
+        }
+      },
+      [props.disabledDate],
+    );
+
     return (
       <LocaleReceiver componentName="DatePicker" defaultLocale={enUS}>
         {(contextLocale: PickerLocale) => {
@@ -121,6 +162,8 @@ export default function generateRangePicker<DateType>(
               transitionName={`${rootPrefixCls}-slide-up`}
               {...restProps}
               {...additionalOverrideProps}
+              onCalendarChange={onChange}
+              disabledDate={disabledDate || props.disabledDate}
               className={classNames(
                 {
                   [`${prefixCls}-${mergedSize}`]: mergedSize,
